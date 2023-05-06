@@ -106,6 +106,7 @@ const PaymentPage = () => {
         gap={2}
       >
         <Button
+          size="lg"
           onClick={() => {
             handleConfirmPopup(
               "คุณทำการชำระเงินผ่าน QR CODE เรียบร้อยแล้ว?",
@@ -115,7 +116,7 @@ const PaymentPage = () => {
         >
           ยืนยันการชำระเงิน
         </Button>
-        <Button variant="danger" onClick={handleCancel}>
+        <Button variant="danger" onClick={handleCancel} size="lg">
           ยกเลิกรายการ
         </Button>
       </Stack>
@@ -130,8 +131,8 @@ const PaymentPage = () => {
         </Offcanvas.Header>
         <Offcanvas.Body>
           <Stack gap={2}>
-            <Button onClick={handleConfirm}>ยืนยัน</Button>
-            <Button variant="danger" onClick={handleClose}>
+            <Button onClick={handleConfirm} size="lg">ยืนยัน</Button>
+            <Button variant="danger" onClick={handleClose} size="lg">
               ยกเลิก
             </Button>
           </Stack>

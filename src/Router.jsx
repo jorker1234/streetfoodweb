@@ -3,7 +3,6 @@ import MenuPage from "./pages/MenuPage";
 import BasketPage from "./pages/BasketPage";
 import PaymentPage from "./pages/PaymentPage";
 import OrderPage from "./pages/OrderPage";
-import HistoryPage from "./pages/HistoryPage";
 import NotFoundPage from "./pages/NotFoundPage";
 import ProtectedContent from "./components/ProtectedContent";
 
@@ -31,7 +30,6 @@ const ValidateRouter = () => {
       <Route path="/basket" element={<BasketPage />} />
       <Route path="/payment" element={<PaymentPage />} />
       <Route path="/order" element={<OrderPage />} />
-      <Route path="/history" element={<HistoryPage />} />
     </Routes>
   );
 };

@@ -128,7 +128,7 @@ const BasketPage = () => {
           <div className="fs-5 fw-bold">ยอดรวม</div>
           <div className="fs-5 fw-bold ms-auto">฿{totalAmount}</div>
         </Stack>
-        <Button onClick={handlePayment}>จ่ายเงิน</Button>
+        <Button onClick={handlePayment} size="lg">จ่ายเงิน</Button>
       </Stack>
 
       <Modal

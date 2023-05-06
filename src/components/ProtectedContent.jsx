@@ -45,22 +45,6 @@ const ProtectRouter = ({ children }) => {
     return <Navigate to={path} replace state={{ form: location }} />;
   }
 
-  // const isPaymentPath = path.indexOf("payment") >= 0;
-  // const isOrderPath = path.indexOf("order") >= 0;
-
-  // if (path.indexOf("payment") === -1 && order.status === "paymentRequest") {
-  //   const path = getAppUrl("/payment");
-  //   return <Navigate to={path} replace state={{ form: location }} />;
-  // }
-  // if (
-  //   path.indexOf("order") === -1 &&
-  //   order.status !== "initial" &&
-  //   order.status !== "paymentRequest"
-  // ) {
-  //   const path = getAppUrl("/order");
-  //   return <Navigate to={path} replace state={{ form: location }} />;
-  // }
-
   return <React.Fragment>{children}</React.Fragment>;
 };
 

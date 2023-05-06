@@ -68,7 +68,7 @@ const MenuDetail = ({
           className="position-fixed m-2"
           onClick={() => callback(null)}
         />
-        <Image fluid src={imageUrl} />
+        <Image fluid src={imageUrl} style={{height: "300px"}}/>
         <Stack className="p-4">
           <h1>{name}</h1>
           <Stack direction="horizontal" gap={3} className="mx-auto my-3">
@@ -90,8 +90,8 @@ const MenuDetail = ({
           </Stack>
           <div className="my-2">&nbsp;</div>
         </Stack>
-        <Stack className="position-fixed bottom-0 start-0 end-0 p-2">
-          <Button onClick={handleAddToBasket} variant={buttonColor}>
+        <Stack className="position-fixed bottom-0 start-0 end-0 p-2 bg-white">
+          <Button onClick={handleAddToBasket} variant={buttonColor} size="lg">
             {buttonText} - ฿{amount}
           </Button>
         </Stack>
