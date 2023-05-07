@@ -1,14 +1,7 @@
 import React, { useState, useEffect } from "react";
 import _ from "lodash";
 import { Link } from "react-router-dom";
-import {
-  Button,
-  Stack,
-  Modal,
-  Card,
-  Placeholder,
-  Container,
-} from "react-bootstrap";
+import { Button, Stack, Modal, Card, Placeholder } from "react-bootstrap";
 import MenuDetail from "../components/menu/MenuDetail";
 import { ArrowLeftShort } from "react-bootstrap-icons";
 import { get as getOrderAsync } from "../apis/order";
@@ -141,11 +134,12 @@ const BasketPage = () => {
             <Stack direction="horizontal" gap={3}>
               <ArrowLeftShort size={36} />
               <Placeholder
-                as={Container}
+                as="div"
                 animation="glow"
                 className="fw-bold fs-5 text-black"
+                xs={6}
               >
-                <Placeholder xs={9} />
+                <Placeholder xs={12} />
               </Placeholder>
             </Stack>
             <Stack direction="horizontal">
@@ -154,38 +148,40 @@ const BasketPage = () => {
                 เพิ่มรายการ
               </div>
             </Stack>
-            {[0, 1, 2].map((o) => (
-              <Stack
-                direction="horizontal"
-                className="align-items-start"
-                gap={3}
-                key={o}
-              >
-                <Card className="mt-2">
-                  <Card.Body className="p-2">
-                    <Placeholder as={Container} animation="glow">
-                      <Placeholder xs={12} />
+            <Stack gap={3} style={{ marginBottom: "100px" }}>
+              {[0, 1, 2].map((o) => (
+                <Stack
+                  direction="horizontal"
+                  className="align-items-start"
+                  gap={3}
+                  key={o}
+                >
+                  <Card className="mt-2">
+                    <Card.Body className="p-2">
+                      <Placeholder as="div" animation="glow" xs={2}>
+                        <Placeholder xs={12} className="px-2" />
+                      </Placeholder>
+                    </Card.Body>
+                  </Card>
+                  <Stack>
+                    <Placeholder as="div" animation="glow">
+                      <Placeholder xs={9} />
                     </Placeholder>
-                  </Card.Body>
-                </Card>
-                <Stack>
-                  <Placeholder as="div" animation="glow">
-                    <Placeholder xs={6} />
+                    <Placeholder
+                      as="div"
+                      animation="glow"
+                      className="text-black-50"
+                    >
+                      <Placeholder xs={4} />
+                    </Placeholder>
+                    <div className="fw-bold text-primary">แก้ไข</div>
+                  </Stack>
+                  <Placeholder as="div" animation="glow" xs={2}>
+                    <Placeholder xs={12} className="ms-auto" />
                   </Placeholder>
-                  <Placeholder
-                    as="div"
-                    animation="glow"
-                    className="text-black-50"
-                  >
-                    <Placeholder xs={4} />
-                  </Placeholder>
-                  <div className="fw-bold text-primary">แก้ไข</div>
                 </Stack>
-                <Placeholder as="div" animation="glow" xs={2}>
-                  <Placeholder xs={12} className="ms-auto" />
-                </Placeholder>
-              </Stack>
-            ))}
+              ))}
+            </Stack>
             <Stack
               className="position-fixed bottom-0 start-0 end-0 p-2 bg-white"
               gap={2}
@@ -224,33 +220,38 @@ const BasketPage = () => {
                 เพิ่มรายการ
               </Link>
             </Stack>
-            {state.menuOrders.map((menuOrder) => (
-              <Stack
-                direction="horizontal"
-                gap={3}
-                className="align-items-start"
-                key={menuOrder.id}
-                onClick={() => handleEdit(menuOrder)}
-              >
-                <Card className="mt-2">
-                  <Card.Body className="p-2">{menuOrder.quantity}x</Card.Body>
-                </Card>
-                <Stack>
-                  <div>{menuOrder.name}</div>
-                  <div className="text-black-50">{menuOrder.note}</div>
-                  <div className="fw-bold text-primary">แก้ไข</div>
+            <Stack gap={3} style={{ marginBottom: "100px" }}>
+              {state.menuOrders.map((menuOrder) => (
+                <Stack
+                  direction="horizontal"
+                  gap={3}
+                  className="align-items-start"
+                  key={menuOrder.id}
+                  onClick={() => handleEdit(menuOrder)}
+                >
+                  <Card className="mt-2">
+                    <Card.Body className="p-2">{menuOrder.quantity}x</Card.Body>
+                  </Card>
+                  <Stack>
+                    <div>{menuOrder.name}</div>
+                    <div className="text-black-50">{menuOrder.note}</div>
+                    <div className="fw-bold text-primary">แก้ไข</div>
+                  </Stack>
+                  <div className="ms-auto">
+                    ฿{menuOrder.amount.toLocaleString("en-US")}
+                  </div>
                 </Stack>
-                <div className="ms-auto">฿{menuOrder.amount}</div>
-              </Stack>
-            ))}
-
+              ))}
+            </Stack>
             <Stack
               className="position-fixed bottom-0 start-0 end-0 p-2 bg-white"
               gap={2}
             >
               <Stack direction="horizontal" gap={3}>
                 <div className="fs-5 fw-bold">ยอดรวม</div>
-                <div className="fs-5 fw-bold ms-auto">฿{totalAmount}</div>
+                <div className="fs-5 fw-bold ms-auto">
+                  ฿{totalAmount.toLocaleString("en-US")}
+                </div>
               </Stack>
               {renderButtonPayment()}
             </Stack>

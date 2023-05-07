@@ -4,13 +4,9 @@ import MenuDetail from "../components/menu/MenuDetail";
 import { query } from "../apis/menu";
 import {
   Button,
-  Container,
   Stack,
-  Col,
-  Row,
   Image,
   Modal,
-  Card,
   Placeholder,
 } from "react-bootstrap";
 import { useAppContext } from "../components/AppProvider";
@@ -100,42 +96,44 @@ const MenuPage = () => {
       <Stack>
         {state.status === ApiStatus.PENDING && (
           <React.Fragment>
-            <Container
+            <div
               className="bg-dark bg-gradient bg-opacity-50"
-              fluid
               style={{ height: "300px" }}
-            ></Container>
-            <Card className="m-2">
-              <Card.Body>
-                <Placeholder as={Card.Title} animation="glow">
-                  <Placeholder xs={6} />
-                </Placeholder>
-              </Card.Body>
-            </Card>
-            <Container fluid className="pb-5">
-              {[0, 1, 2].map((o) => (
-                <Row className="my-2" key={o}>
-                  <Col xs="3">
-                    <Container
+            ></div>
+            <Stack className="p-3">
+              <Placeholder as="div" animation="glow">
+                <Placeholder xs={6} className="fw-bold fs-2" />
+              </Placeholder>
+              <hr />
+              <Stack gap={3} style={{ marginBottom: "60px" }}>
+                {[0, 1, 2].map((o) => (
+                  <Stack
+                    key={o}
+                    direction="horizontal"
+                    gap={3}
+                    className="align-items-start"
+                  >
+                    <div
                       className="bg-dark bg-opacity-25 rounded"
                       style={{ width: "70px", height: "70px" }}
-                    ></Container>
-                  </Col>
-                  <Col>
-                    <Placeholder as="div" animation="glow">
-                      <Placeholder xs={9} />
-                    </Placeholder>
-                    <Placeholder
-                      as="p"
-                      className="font-weight"
-                      animation="glow"
-                    >
-                      <Placeholder xs={4} />
-                    </Placeholder>
-                  </Col>
-                </Row>
-              ))}
-            </Container>
+                    ></div>
+                    <Stack>
+                      <Placeholder as="div" animation="glow">
+                        <Placeholder xs={9} />
+                      </Placeholder>
+                      <Placeholder
+                        as="div"
+                        className="font-weight"
+                        animation="glow"
+                      >
+                        <Placeholder xs={4} />
+                        &nbsp;
+                      </Placeholder>
+                    </Stack>
+                  </Stack>
+                ))}
+              </Stack>
+            </Stack>
           </React.Fragment>
         )}
         {state.status === ApiStatus.COMPLETE && (
@@ -145,38 +143,41 @@ const MenuPage = () => {
               src={state.shop.imageUrl}
               style={{ height: "300px" }}
             />
-            <Card className="m-2">
-              <Card.Body>{state.shop.name}</Card.Body>
-            </Card>
-            <Container fluid className="pb-5">
-              {state.menuOrders.map((menuOrder) => (
-                <Row
-                  className="my-2"
-                  onClick={() => handleClick(menuOrder)}
-                  key={menuOrder.id}
-                >
-                  <Col xs="3">
+            <Stack className="p-3">
+              <div className="fw-bold fs-2">{state.shop.name}</div>
+              <hr />
+              <Stack gap={3} style={{ marginBottom: "60px" }}>
+                {state.menuOrders.map((menuOrder) => (
+                  <Stack
+                    key={menuOrder.id}
+                    direction="horizontal"
+                    gap={3}
+                    className="align-items-start"
+                    onClick={() => handleClick(menuOrder)}
+                  >
                     <Image
                       rounded
                       src={menuOrder.imageUrl}
                       style={{ width: "70px", height: "70px" }}
                     />
-                  </Col>
-                  <Col>
-                    {!!menuOrder.quantity && (
-                      <div className="text-primary fw-bold">
-                        {menuOrder.quantity} x {menuOrder.name}
+                    <div>
+                      {!!menuOrder.quantity && (
+                        <div className="text-primary fw-bold">
+                          {menuOrder.quantity} x {menuOrder.name}
+                        </div>
+                      )}
+                      {!menuOrder.quantity && <div>{menuOrder.name}</div>}
+                      <div className="text-black-50">
+                        {menuOrder.description}
                       </div>
-                    )}
-                    {!menuOrder.quantity && <div>{menuOrder.name}</div>}
-                    <div className="text-black-50">{menuOrder.description}</div>
-                    <p>
-                      <strong>฿{menuOrder.price}</strong>
-                    </p>
-                  </Col>
-                </Row>
-              ))}
-            </Container>
+                      <div className="fw-bold">
+                        ฿{menuOrder.price.toLocaleString("en-US")}
+                      </div>
+                    </div>
+                  </Stack>
+                ))}
+              </Stack>
+            </Stack>
             {totalItem > 0 && (
               <Stack className="position-fixed bottom-0 start-0 end-0 p-2 bg-white">
                 <Button
@@ -187,7 +188,7 @@ const MenuPage = () => {
                   <label className="flex-grow-1">
                     จำนวน {totalItem} รายการ
                   </label>
-                  <label>฿{totalAmount}</label>
+                  <label>฿{totalAmount.toLocaleString("en-US")}</label>
                 </Button>
               </Stack>
             )}

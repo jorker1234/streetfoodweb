@@ -3,7 +3,6 @@ import {
   Button,
   Stack,
   Offcanvas,
-  Container,
   Placeholder,
 } from "react-bootstrap";
 import qrcode from "qrcode";
@@ -115,19 +114,20 @@ const PaymentPage = () => {
             <Stack direction="horizontal" gap={3}>
               <ArrowLeftShort size={36} />
               <Placeholder
-                as={Container}
+                as="div"
                 animation="glow"
                 className="fw-bold fs-5 text-black"
+                xs={6}
               >
-                <Placeholder xs={9} />
+                <Placeholder xs={12} />
               </Placeholder>
             </Stack>
           </Stack>
           <Stack>
-            <Container
+            <div
               className="bg-dark bg-opacity-50 p-0"
               style={{ width: "280px", height: "280px", margin: "40px auto" }}
-            ></Container>
+            ></div>
           </Stack>
         </React.Fragment>
       )}

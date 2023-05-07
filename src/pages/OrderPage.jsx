@@ -229,13 +229,13 @@ const OrderPage = () => {
                       <div>{item.name}</div>
                       <div className="text-black-50">{item.note}</div>
                     </Stack>
-                    <div className="ms-auto">฿{item.amount}</div>
+                    <div className="ms-auto">฿{item.amount.toLocaleString('en-US')}</div>
                   </Stack>
                 ))}
               <hr />
               <Stack direction="horizontal">
                 <div className="fw-bold">ยอดรวม</div>
-                <div className="fw-bold ms-auto">฿{totalAmount}</div>
+                <div className="fw-bold ms-auto">฿{totalAmount.toLocaleString('en-US')}</div>
               </Stack>
             </React.Fragment>
           )}

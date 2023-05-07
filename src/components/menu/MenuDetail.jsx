@@ -24,9 +24,12 @@ const MenuDetail = ({
   const [state, setState] = useState({
     status: ApiStatus.COMPLETE,
     quantity: Math.max(1, quantity),
-    note,
+    note: note ?? "",
   });
   const handleAddToBasket = async () => {
+    if (!itemId && state.quantity === 0) {
+      return callback(null);
+    }
     setState({
       ...state,
       status: ApiStatus.PENDING,
@@ -77,17 +80,15 @@ const MenuDetail = ({
           onClick={() => callback(null)}
         />
         <Image fluid src={imageUrl} style={{ height: "300px" }} />
-        <Stack className="p-4">
-          <h1>{name}</h1>
-          <Stack direction="horizontal" gap={3} className="mx-auto my-3">
-            <DashSquareFill size={36} onClick={() => handleAddQuantity(-1)} />
-            <label>{state.quantity}</label>
-            <PlusSquareFill size={36} onClick={() => handleAddQuantity(1)} />
+        <Stack className="p-3">
+          <Stack direction="horizontal" gap={3} className="align-items-start">
+            <div className="fw-bold fs-2">{name}</div>
+            <div className="fw-bold fs-2 ms-auto">{price}</div>
           </Stack>
           <hr />
           <Stack className="">
             <label htmlFor="txtNote" className="form-label">
-              Note
+              รายละเอียดเพิ่มเติม
             </label>
             <textarea
               className="form-control"
@@ -95,6 +96,11 @@ const MenuDetail = ({
               onChange={handleOnChange}
               value={state.note}
             />
+          </Stack>
+          <Stack direction="horizontal" gap={3} className="mx-auto my-3">
+            <DashSquareFill size={36} onClick={() => handleAddQuantity(-1)} />
+            <label>{state.quantity}</label>
+            <PlusSquareFill size={36} onClick={() => handleAddQuantity(1)} />
           </Stack>
           <div className="my-2">&nbsp;</div>
         </Stack>
@@ -108,7 +114,7 @@ const MenuDetail = ({
           )}
           {state.status === ApiStatus.COMPLETE && (
             <Button onClick={handleAddToBasket} variant={buttonColor} size="lg">
-              {buttonText} - ฿{amount}
+              {buttonText} - ฿{amount.toLocaleString("en-US")}
             </Button>
           )}
         </Stack>
