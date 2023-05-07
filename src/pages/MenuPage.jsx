@@ -15,12 +15,18 @@ import {
 } from "react-bootstrap";
 import { useAppContext } from "../components/AppProvider";
 import { ApiStatus } from "../constants/app";
+import { useCartContext } from "../components/CartProvider";
 
 const MenuPage = () => {
   const { shopId, orderId, navigateApp } = useAppContext();
+  const {
+    cart: { isLoaded },
+  } = useCartContext();
   useEffect(() => {
-    fetchData();
-  }, []);
+    if (isLoaded) {
+      fetchData();
+    }
+  }, [isLoaded]);
 
   const [state, setState] = useState({
     status: ApiStatus.PENDING,
@@ -95,10 +101,10 @@ const MenuPage = () => {
         {state.status === ApiStatus.PENDING && (
           <React.Fragment>
             <Container
-                    className="bg-black bg-opacity-75"
-                    fluid
-                    style={{ height: "300px" }}
-                  ></Container>
+              className="bg-dark bg-gradient bg-opacity-50"
+              fluid
+              style={{ height: "300px" }}
+            ></Container>
             <Card className="m-2">
               <Card.Body>
                 <Placeholder as={Card.Title} animation="glow">
@@ -107,63 +113,38 @@ const MenuPage = () => {
               </Card.Body>
             </Card>
             <Container fluid className="pb-5">
-              <Row className="my-2">
-                <Col xs="3">
-                  <Container
-                    className="bg-black bg-opacity-75"
-                    fluid
-                    style={{ height: "50px" }}
-                  ></Container>
-                </Col>
-                <Col>
-                  <Placeholder as="div" animation="glow">
-                    <Placeholder xs={9} />
-                  </Placeholder>
-                  <Placeholder as="p" className="font-weight" animation="glow">
-                    <Placeholder xs={4} />
-                  </Placeholder>
-                </Col>
-              </Row>
-              <Row className="my-2">
-                <Col xs="3">
-                  <Container
-                    className="bg-black bg-opacity-75"
-                    fluid
-                    style={{ height: "50px" }}
-                  ></Container>
-                </Col>
-                <Col>
-                  <Placeholder as="div" animation="glow">
-                    <Placeholder xs={9} />
-                  </Placeholder>
-                  <Placeholder as="p" className="font-weight" animation="glow">
-                    <Placeholder xs={4} />
-                  </Placeholder>
-                </Col>
-              </Row>
-              <Row className="my-2">
-                <Col xs="3">
-                  <Container
-                    className="bg-black bg-opacity-75"
-                    fluid
-                    style={{ height: "50px" }}
-                  ></Container>
-                </Col>
-                <Col>
-                  <Placeholder as="div" animation="glow">
-                    <Placeholder xs={9} />
-                  </Placeholder>
-                  <Placeholder as="p" className="font-weight" animation="glow">
-                    <Placeholder xs={4} />
-                  </Placeholder>
-                </Col>
-              </Row>
+              {[0, 1, 2].map((o) => (
+                <Row className="my-2" key={o}>
+                  <Col xs="3">
+                    <Container
+                      className="bg-dark bg-opacity-25 rounded"
+                      style={{ width: "70px", height: "70px" }}
+                    ></Container>
+                  </Col>
+                  <Col>
+                    <Placeholder as="div" animation="glow">
+                      <Placeholder xs={9} />
+                    </Placeholder>
+                    <Placeholder
+                      as="p"
+                      className="font-weight"
+                      animation="glow"
+                    >
+                      <Placeholder xs={4} />
+                    </Placeholder>
+                  </Col>
+                </Row>
+              ))}
             </Container>
           </React.Fragment>
         )}
         {state.status === ApiStatus.COMPLETE && (
           <React.Fragment>
-            <Image fluid src={state.shop.imageUrl} style={{height: "300px"}} />
+            <Image
+              fluid
+              src={state.shop.imageUrl}
+              style={{ height: "300px" }}
+            />
             <Card className="m-2">
               <Card.Body>{state.shop.name}</Card.Body>
             </Card>
@@ -175,7 +156,11 @@ const MenuPage = () => {
                   key={menuOrder.id}
                 >
                   <Col xs="3">
-                    <Image fluid rounded src={menuOrder.imageUrl} />
+                    <Image
+                      rounded
+                      src={menuOrder.imageUrl}
+                      style={{ width: "70px", height: "70px" }}
+                    />
                   </Col>
                   <Col>
                     {!!menuOrder.quantity && (

@@ -1,12 +1,13 @@
 import React, { useState } from "react";
 import PropTypes from "prop-types";
-import { Button, Stack, Image } from "react-bootstrap";
+import { Button, Stack, Image, Placeholder } from "react-bootstrap";
 import {
   XCircleFill,
   PlusSquareFill,
   DashSquareFill,
 } from "react-bootstrap-icons";
 import { update } from "../../apis/order";
+import { ApiStatus } from "../../constants/app";
 
 const MenuDetail = ({
   shopId,
@@ -21,11 +22,15 @@ const MenuDetail = ({
   callback,
 }) => {
   const [state, setState] = useState({
-    status: "idle",
+    status: ApiStatus.COMPLETE,
     quantity: Math.max(1, quantity),
     note,
   });
   const handleAddToBasket = async () => {
+    setState({
+      ...state,
+      status: ApiStatus.PENDING,
+    });
     const params = {
       shopId,
       orderId,
@@ -44,6 +49,9 @@ const MenuDetail = ({
     });
   };
   const handleAddQuantity = (value) => {
+    if (state.status !== ApiStatus.COMPLETE) {
+      return;
+    }
     let quantity = state.quantity + value;
     if (quantity < 0) {
       quantity = 0;
@@ -68,7 +76,7 @@ const MenuDetail = ({
           className="position-fixed m-2"
           onClick={() => callback(null)}
         />
-        <Image fluid src={imageUrl} style={{height: "300px"}}/>
+        <Image fluid src={imageUrl} style={{ height: "300px" }} />
         <Stack className="p-4">
           <h1>{name}</h1>
           <Stack direction="horizontal" gap={3} className="mx-auto my-3">
@@ -91,9 +99,18 @@ const MenuDetail = ({
           <div className="my-2">&nbsp;</div>
         </Stack>
         <Stack className="position-fixed bottom-0 start-0 end-0 p-2 bg-white">
-          <Button onClick={handleAddToBasket} variant={buttonColor} size="lg">
-            {buttonText} - ฿{amount}
-          </Button>
+          {state.status === ApiStatus.PENDING && (
+            <Button variant={buttonColor} size="lg" disabled>
+              <Placeholder animation="glow">
+                <Placeholder xs={8} />
+              </Placeholder>
+            </Button>
+          )}
+          {state.status === ApiStatus.COMPLETE && (
+            <Button onClick={handleAddToBasket} variant={buttonColor} size="lg">
+              {buttonText} - ฿{amount}
+            </Button>
+          )}
         </Stack>
       </Stack>
     </React.Fragment>
