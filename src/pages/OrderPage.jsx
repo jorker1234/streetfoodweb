@@ -4,7 +4,6 @@ import { useAppContext } from "../components/AppProvider";
 import { useCartContext } from "../components/CartProvider";
 import { get as getBill, BillStatus } from "../apis/bill";
 import { ApiStatus } from "../constants/app";
-import { socket } from "../socket";
 const OrderPage = () => {
   const { shopId, orderId } = useAppContext();
   const {
@@ -16,41 +15,10 @@ const OrderPage = () => {
   });
 
   useEffect(() => {
-    socket.on("connect", () => {
-      socket.emit("join-order", { shopId, orderId });
-    });
-    
-    socket.connect();
-    return () => {
-      socket.off("connect");
-      socket.disconnect();
-    };
-  }, []);
-
-  useEffect(() => {
-    socket.on("order-updated", updateStatus);
-    return () => {
-      socket.off("order-updated");
-    }
-  }, [state])
-
-  useEffect(() => {
     if (isLoaded) {
       fetchData();
     }
   }, [isLoaded]);
-
-  const updateStatus = ({bills = []}) => {
-    const bill = bills[0];
-    if (!bill) {
-      return;
-    }
-    console.log(state);
-    setState({
-      ...state,
-      bill,
-    });
-  }
 
   const fetchData = async () => {
     const params = {
