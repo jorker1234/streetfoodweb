@@ -4,6 +4,7 @@ import { useAppContext } from "../components/AppProvider";
 import { useCartContext } from "../components/CartProvider";
 import { get as getBill, BillStatus } from "../apis/bill";
 import { ApiStatus } from "../constants/app";
+import { socket } from "../socket";
 const OrderPage = () => {
   const { shopId, orderId } = useAppContext();
   const {
@@ -13,11 +14,44 @@ const OrderPage = () => {
     status: ApiStatus.PENDING,
     bill: null,
   });
+
+  useEffect(() => {
+    socket.on("connect", () => {
+      socket.emit("join-order", { shopId, orderId });
+    });
+    
+    socket.connect();
+    return () => {
+      socket.off("connect");
+      socket.disconnect();
+    };
+  }, []);
+
+  useEffect(() => {
+    socket.on("order-updated", updateStatus);
+    return () => {
+      socket.off("order-updated");
+    }
+  }, [state])
+
   useEffect(() => {
     if (isLoaded) {
       fetchData();
     }
   }, [isLoaded]);
+
+  const updateStatus = ({bills = []}) => {
+    const bill = bills[0];
+    if (!bill) {
+      return;
+    }
+    console.log(state);
+    setState({
+      ...state,
+      bill,
+    });
+  }
+
   const fetchData = async () => {
     const params = {
       shopId,
@@ -229,13 +263,17 @@ const OrderPage = () => {
                       <div>{item.name}</div>
                       <div className="text-black-50">{item.note}</div>
                     </Stack>
-                    <div className="ms-auto">฿{item.amount.toLocaleString('en-US')}</div>
+                    <div className="ms-auto">
+                      ฿{item.amount.toLocaleString("en-US")}
+                    </div>
                   </Stack>
                 ))}
               <hr />
               <Stack direction="horizontal">
                 <div className="fw-bold">ยอดรวม</div>
-                <div className="fw-bold ms-auto">฿{totalAmount.toLocaleString('en-US')}</div>
+                <div className="fw-bold ms-auto">
+                  ฿{totalAmount.toLocaleString("en-US")}
+                </div>
               </Stack>
             </React.Fragment>
           )}

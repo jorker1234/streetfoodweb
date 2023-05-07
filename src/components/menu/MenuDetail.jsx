@@ -83,7 +83,7 @@ const MenuDetail = ({
         <Stack className="p-3">
           <Stack direction="horizontal" gap={3} className="align-items-start">
             <div className="fw-bold fs-2">{name}</div>
-            <div className="fw-bold fs-2 ms-auto">{price}</div>
+            <div className="fw-bold fs-2 ms-auto">฿{price}</div>
           </Stack>
           <hr />
           <Stack className="">
