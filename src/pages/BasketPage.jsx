@@ -1,7 +1,15 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import _ from "lodash";
 import { Link } from "react-router-dom";
-import { Button, Stack, Modal, Card, Placeholder } from "react-bootstrap";
+import {
+  Button,
+  Stack,
+  Modal,
+  Card,
+  Placeholder,
+  Offcanvas,
+  Form,
+} from "react-bootstrap";
 import { ArrowLeftShort } from "react-bootstrap-icons";
 import { get as getOrderAsync } from "../apis/order";
 import { create as createBillAsync } from "../apis/bill";
@@ -9,15 +17,12 @@ import useAppUrl from "../hooks/useAppUrl";
 import { useCartContext } from "../context/CartProvider";
 import { ApiStatus } from "../constants/app";
 import OrderDetail from "../components/OrderDetail";
+import { useDialog } from "../context/DialogProvider";
 
 const BasketPage = () => {
-  const { shopId, orderId, getAppUrl } = useAppUrl();
+  const { shopId, orderId, getAppUrl, navigateApp } = useAppUrl();
+  const { alert } = useDialog();
   const { reloadCartAsync, status: cartStatus, shop } = useCartContext();
-  useEffect(() => {
-    if (cartStatus === ApiStatus.COMPLETE) {
-      fetchData(shopId, orderId);
-    }
-  }, [cartStatus, shopId, orderId]);
 
   const [status, setStatus] = useState(ApiStatus.PENDING);
   const [actionStatus, setActionStatus] = useState(ApiStatus.COMPLETE);
@@ -25,19 +30,62 @@ const BasketPage = () => {
   const [menuSelect, setMenuSelect] = useState(null);
   const [order, setOrder] = useState(null);
   const [menuOrders, setMenuOrders] = useState([]);
-  const fetchData = async (shopId, orderId) => {
-    const params = {
-      shopId,
-      orderId,
-    };
-    const { order, menuOrders = [] } = await getOrderAsync(params);
-    setOrder(order);
-    setMenuOrders(menuOrders);
-    setStatus(ApiStatus.COMPLETE);
-  };
+  const [customer, setCustomer] = useState("");
+  const [customerShow, setCustomerShow] = useState(false);
+  const [validated, setValidated] = useState(false);
+
+  const fetchData = useCallback(async () => {
+    try {
+      if (cartStatus !== ApiStatus.COMPLETE) {
+        return;
+      }
+      const params = {
+        shopId,
+        orderId,
+      };
+      const { order, menuOrders = [] } = await getOrderAsync(params);
+      setOrder(order);
+      setMenuOrders(menuOrders);
+      if (order.customer) {
+        setCustomer(order.customer);
+      }
+      setStatus(ApiStatus.COMPLETE);
+    } catch (error) {
+      await alert("มีบางอย่างพิดพลาด กรุณาติดต่อพนักงาน");
+      navigateApp("/notfound");
+    }
+  }, [cartStatus, shopId, orderId, alert, navigateApp]);
+
+  const validateEmptyBasket = useCallback(async () => {
+    if (
+      cartStatus !== ApiStatus.COMPLETE ||
+      status !== ApiStatus.COMPLETE ||
+      actionStatus != ApiStatus.COMPLETE
+    ) {
+      return;
+    }
+    if (!menuOrders || menuOrders.length === 0) {
+      await alert("ไม่พบรายการอาหาร กรุณาเพิ่มรายการ", "เพิ่มรายการ");
+      navigateApp("/menu");
+    }
+  }, [actionStatus, alert, cartStatus, menuOrders, navigateApp, status]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  useEffect(() => {
+    validateEmptyBasket();
+  }, [validateEmptyBasket]);
+
   const totalAmount = order?.amount ?? 0;
 
   const handleClose = () => setShow(false);
+  const handleCustomerClose = () => setCustomerShow(false);
+  const handleCustomerOpen = () => {
+    setValidated(false);
+    setCustomerShow(true);
+  };
   const handleEdit = (menuOrder) => {
     if (status !== ApiStatus.COMPLETE || actionStatus !== ApiStatus.COMPLETE) {
       return;
@@ -46,9 +94,12 @@ const BasketPage = () => {
     setMenuSelect({ ...params, menuId, shopId, orderId });
     setShow(true);
   };
-  const handleUpdateBasket = (value, isRemove) => {
+  const handleUpdateBasket = async (value, isRemove, error) => {
     if (!value) {
       handleClose();
+      if (error) {
+        await alert("มีบางอย่างพิดพลาด กรุณาลองใหม่อีกครั้ง");
+      }
       return;
     }
     const { order, menuOrders: menuOrderUpdated } = value;
@@ -66,18 +117,35 @@ const BasketPage = () => {
     setMenuOrders(menuOrderList);
     handleClose();
   };
-  const handlePayment = async () => {
-    setActionStatus(ApiStatus.PENDING);
-    const result = await createBillAsync({
-      shopId,
-      orderId,
-      customer: "คุณอร",
-    });
-    if (result.bills.length > 0 && result.bills[0].isActived) {
-      return await reloadCartAsync(shopId, orderId);
-    }
-    setActionStatus(ApiStatus.COMPLETE);
-  };
+
+  const handlePayment = useCallback(
+    async (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setValidated(true);
+      const form = e.currentTarget;
+      if (!form.checkValidity() || !customer) {
+        return;
+      }
+      handleCustomerClose();
+      setActionStatus(ApiStatus.PENDING);
+      try {
+        const result = await createBillAsync({
+          shopId,
+          orderId,
+          customer,
+        });
+        if (result.bills.length > 0 && result.bills[0].isActived) {
+          return await reloadCartAsync(shopId, orderId);
+        }
+        setActionStatus(ApiStatus.COMPLETE);
+      } catch (error) {
+        await alert("มีบางอย่างพิดพลาด กรุณาลองใหม่อีกครั้ง");
+        setActionStatus(ApiStatus.COMPLETE);
+      }
+    },
+    [alert, customer, orderId, reloadCartAsync, shopId]
+  );
 
   const renderButtonPayment = () => {
     if (status === ApiStatus.PENDING || actionStatus === ApiStatus.PENDING) {
@@ -90,7 +158,7 @@ const BasketPage = () => {
       );
     }
     return (
-      <Button size="lg" onClick={handlePayment}>
+      <Button size="lg" onClick={handleCustomerOpen}>
         จ่ายเงิน
       </Button>
     );
@@ -197,7 +265,9 @@ const BasketPage = () => {
                   onClick={() => handleEdit(menuOrder)}
                 >
                   <Card className="mt-2">
-                    <Card.Body className="p-2 text-primary">{menuOrder.quantity}x</Card.Body>
+                    <Card.Body className="p-2 text-primary">
+                      {menuOrder.quantity}x
+                    </Card.Body>
                   </Card>
                   <Stack>
                     <div>{menuOrder.name}</div>
@@ -236,13 +306,38 @@ const BasketPage = () => {
           {show && (
             <OrderDetail
               {...menuSelect}
-              callback={(value, isRemove) =>
-                handleUpdateBasket(value, isRemove)
+              callback={(value, isRemove, error) =>
+                handleUpdateBasket(value, isRemove, error)
               }
             />
           )}
         </Modal.Body>
       </Modal>
+
+      <Offcanvas
+        show={customerShow}
+        onHide={handleCustomerClose}
+        placement="bottom"
+      >
+        <Offcanvas.Header closeButton size="lg">
+          <Offcanvas.Title>ชื่อลูกค้า</Offcanvas.Title>
+        </Offcanvas.Header>
+        <Offcanvas.Body className="py-1">
+          <Form noValidate validated={validated} onSubmit={handlePayment}>
+            <Stack gap={4}>
+              <Form.Control
+                type="text"
+                required
+                value={customer}
+                onChange={(e) => setCustomer(e.target.value)}
+              />
+              <Button type="submit" size="lg">
+                จ่ายเงิน
+              </Button>
+            </Stack>
+          </Form>
+        </Offcanvas.Body>
+      </Offcanvas>
     </React.Fragment>
   );
 };

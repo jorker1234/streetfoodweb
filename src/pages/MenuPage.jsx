@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import _ from "lodash";
 import { query } from "../apis/menu";
 import { Button, Stack, Image, Modal, Placeholder } from "react-bootstrap";
@@ -6,15 +6,34 @@ import useAppUrl from "../hooks/useAppUrl";
 import { ApiStatus } from "../constants/app";
 import { useCartContext } from "../context/CartProvider";
 import OrderDetail from "../components/OrderDetail";
+import { useDialog } from "../context/DialogProvider";
 
 const MenuPage = () => {
   const { shopId, orderId, navigateApp } = useAppUrl();
+  const { alert } = useDialog();
   const { status: cartStatus, shop } = useCartContext();
-  useEffect(() => {
-    if (cartStatus === ApiStatus.COMPLETE) {
-      fetchData(shopId, orderId);
+  const fetchData = useCallback(async () => {
+    if (cartStatus !== ApiStatus.COMPLETE) {
+      return;
     }
-  }, [cartStatus, shopId, orderId]);
+    const params = {
+      shopId,
+      orderId,
+    };
+    try {
+      const { order, menuOrders = [] } = await query(params);
+      setOrder(order);
+      setMenuOrders(menuOrders);
+      setStatus(ApiStatus.COMPLETE);
+    } catch (error) {
+      await alert("มีบางอย่างพิดพลาด กรุณาติดต่อพนักงาน");
+      navigateApp("/notfound");
+    }
+  }, [alert, cartStatus, navigateApp, orderId, shopId]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   const [status, setStatus] = useState(ApiStatus.PENDING);
   const [show, setShow] = useState(false);
@@ -22,25 +41,17 @@ const MenuPage = () => {
   const [order, setOrder] = useState(null);
   const [menuOrders, setMenuOrders] = useState([]);
 
-  const fetchData = async (shopId, orderId) => {
-    const params = {
-      shopId,
-      orderId,
-    };
-    const { order, menuOrders = [] } = await query(params);
-    setOrder(order);
-    setMenuOrders(menuOrders);
-    setStatus(ApiStatus.COMPLETE);
-  };
-
   const handleClick = (menuOrder) => {
     const { id: menuId, ...params } = menuOrder;
     setMenuSelect({ ...params, menuId, shopId, orderId });
     setShow(true);
   };
-  const handleUpdateBasket = (value, isRemove) => {
+  const handleUpdateBasket = async(value, isRemove, error) => {
     if (!value) {
       handleClose();
+      if(error) {
+        await alert("มีบางอย่างพิดพลาด กรุณาลองใหม่อีกครั้ง");
+      }
       return;
     }
 
@@ -181,8 +192,8 @@ const MenuPage = () => {
           {show && (
             <OrderDetail
               {...menuSelect}
-              callback={(value, isRemove) =>
-                handleUpdateBasket(value, isRemove)
+              callback={(value, isRemove, error) =>
+                handleUpdateBasket(value, isRemove, error)
               }
             />
           )}

@@ -1,30 +1,39 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Stack, Card, Placeholder } from "react-bootstrap";
 import useAppUrl from "../hooks/useAppUrl";
 import { useCartContext } from "../context/CartProvider";
 import { get as getBill, BillStatus } from "../apis/bill";
 import { ApiStatus } from "../constants/app";
+import { useDialog } from "../context/DialogProvider";
 const OrderPage = () => {
-  const { shopId, orderId } = useAppUrl();
+  const { shopId, orderId, navigateApp } = useAppUrl();
   const { status: cartStatus } = useCartContext();
+  const { alert } = useDialog();
   const [status, setStatus] = useState(ApiStatus.PENDING);
   const [bill, setBill] = useState(null);
 
-  useEffect(() => {
-    if (cartStatus === ApiStatus.COMPLETE) {
-      fetchData(shopId, orderId);
+  const fetchData = useCallback(async () => {
+    if (cartStatus !== ApiStatus.COMPLETE) {
+      return;
     }
-  }, [cartStatus, shopId, orderId]);
-
-  const fetchData = async (shopId, orderId) => {
     const params = {
-      shopId,
+      shopId: shopId,
       orderId,
     };
-    const { bills = [] } = await getBill(params);
-    setBill(bills[0]);
-    setStatus(ApiStatus.COMPLETE);
-  };
+    try {
+      const { bills = [] } = await getBill(params);
+      setBill(bills[0]);
+      setStatus(ApiStatus.COMPLETE);
+    } catch (error) {
+      await alert("มีบางอย่างพิดพลาด กรุณาติดต่อพนักงาน");
+      navigateApp("/notfound");
+    }
+  }, [alert, cartStatus, navigateApp, orderId, shopId]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
   const billStatus = bill?.status;
   const totalAmount = bill?.amount ?? 0;
   let progressBarWidth = 0;

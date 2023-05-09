@@ -1,10 +1,11 @@
-import React from "react";
+import React, { useCallback, useEffect } from "react";
 import PropTypes from "prop-types";
 import { Navigate, useLocation } from "react-router-dom";
 import { useCartContext } from "../context/CartProvider";
 import { OrderStatus } from "../apis/order";
 import useAppUrl from "../hooks/useAppUrl";
 import { ApiStatus } from "../constants/app";
+import { useDialog } from "../context/DialogProvider";
 
 const permisionByUrlDict = {
   "/menu": [OrderStatus.INITIALIZE],
@@ -26,21 +27,32 @@ permisionByStatusDict[OrderStatus.COMPLETE] = "/order";
 
 const ProtectRouter = ({ children }) => {
   const location = useLocation();
-  const { shopId, orderId, path, getAppUrl } = useAppUrl();
-  const {
-    status,
-    shop,
-    order,
-  } = useCartContext();
+  const { alert } = useDialog();
+  const { shopId, orderId, path, getAppUrl, navigateApp } = useAppUrl();
+  const { status, shop, order } = useCartContext();
+  const alertDataIsNotExits = useCallback(async () => {
+    if (status === ApiStatus.PENDING) {
+      return;
+    }
+    if (status === ApiStatus.ERROR || !shop || !order) {
+      await alert("ไม่พบร้านค้า หรือ หมายเลขคิว กรุณาติดต่อพนักงาน");
+      navigateApp("/notfound");
+    }
+  }, [status, shop, order, alert, navigateApp]);
+
+  useEffect(() => {
+    alertDataIsNotExits();
+  }, [alertDataIsNotExits]);
+
   const permissionStatus = permisionByUrlDict[path];
   if (!shopId || !orderId || !permissionStatus) {
     return <Navigate to="/notfound" replace state={{ form: location }} />;
   }
-  if (status !== ApiStatus.COMPLETE) {
+  if (status === ApiStatus.PENDING) {
     return <React.Fragment>{children}</React.Fragment>;
   }
-  if (!shop || !order) {
-    return <Navigate to="/notfound" replace state={{ form: location }} />;
+  if (status === ApiStatus.ERROR || !shop || !order) {
+    return <React.Fragment>{children}</React.Fragment>;
   }
 
   if (permissionStatus.indexOf(order.status) === -1) {

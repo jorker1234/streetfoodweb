@@ -1,3 +1,4 @@
+import { useCallback } from "react";
 import { useSearchParams, useLocation, useNavigate } from "react-router-dom";
 
 const useAppUrl = () => {
@@ -8,16 +9,16 @@ const useAppUrl = () => {
   const orderId = searchParams.get("orderId");
   const path = location.pathname;
 
-  const getAppUrl = (url) => {
+  const getAppUrl = useCallback((url) => {
     const suffix = `shopId=${shopId}&orderId=${orderId}`;
     const hasQueryString = url.indexOf("?") >= 0;
     const seperator = hasQueryString ? "&" : "?";
     return url + seperator + suffix;
-  };
+  }, [orderId, shopId]);
 
-  const navigateApp = (url) => {
+  const navigateApp = useCallback((url) => {
     navigate(getAppUrl(url));
-  };
+  }, [getAppUrl, navigate]);
 
   return { shopId, orderId, path, getAppUrl, navigateApp };
 };

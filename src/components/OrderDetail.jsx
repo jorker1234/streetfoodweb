@@ -28,6 +28,9 @@ const OrderDetail = ({
     if (!itemId && quantity === 0) {
       return callback(null);
     }
+    if (itemId && quantity === quantityParam && note === noteParam) {
+      return callback(null);
+    }
     setStatus(ApiStatus.PENDING);
     const params = {
       shopId,
@@ -36,8 +39,12 @@ const OrderDetail = ({
       quantity,
       note,
     };
-    const result = await updateOrderAsync(params);
-    callback(result, quantity === 0);
+    try {
+      const result = await updateOrderAsync(params);
+      callback(result, quantity === 0);
+    } catch (error) {
+      callback(null, false, error);
+    }
   };
   const handleOnNoteChange = (e) => {
     const value = e.target.value;
