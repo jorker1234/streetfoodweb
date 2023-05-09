@@ -1,74 +1,54 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import _ from "lodash";
-import MenuDetail from "../components/menu/MenuDetail";
 import { query } from "../apis/menu";
-import {
-  Button,
-  Stack,
-  Image,
-  Modal,
-  Placeholder,
-} from "react-bootstrap";
-import { useAppContext } from "../components/AppProvider";
+import { Button, Stack, Image, Modal, Placeholder } from "react-bootstrap";
+import useAppUrl from "../hooks/useAppUrl";
 import { ApiStatus } from "../constants/app";
-import { useCartContext } from "../components/CartProvider";
+import { useCartContext } from "../context/CartProvider";
+import OrderDetail from "../components/OrderDetail";
 
 const MenuPage = () => {
-  const { shopId, orderId, navigateApp } = useAppContext();
-  const {
-    cart: { isLoaded },
-  } = useCartContext();
+  const { shopId, orderId, navigateApp } = useAppUrl();
+  const { status: cartStatus, shop } = useCartContext();
   useEffect(() => {
-    if (isLoaded) {
-      fetchData();
+    if (cartStatus === ApiStatus.COMPLETE) {
+      fetchData(shopId, orderId);
     }
-  }, [isLoaded]);
+  }, [cartStatus, shopId, orderId]);
 
-  const [state, setState] = useState({
-    status: ApiStatus.PENDING,
-    show: false,
-    shop: null,
-    order: null,
-    menuSelect: {},
-    menuOrders: [],
-  });
-  const fetchData = async () => {
+  const [status, setStatus] = useState(ApiStatus.PENDING);
+  const [show, setShow] = useState(false);
+  const [menuSelect, setMenuSelect] = useState(null);
+  const [order, setOrder] = useState(null);
+  const [menuOrders, setMenuOrders] = useState([]);
+
+  const fetchData = async (shopId, orderId) => {
     const params = {
       shopId,
       orderId,
-      keyword: "",
     };
-    const { shop, order, menuOrders = [] } = await query(params);
-    setState({
-      ...state,
-      status: ApiStatus.COMPLETE,
-      shop,
-      order,
-      menuOrders,
-    });
+    const { order, menuOrders = [] } = await query(params);
+    setOrder(order);
+    setMenuOrders(menuOrders);
+    setStatus(ApiStatus.COMPLETE);
   };
 
   const handleClick = (menuOrder) => {
     const { id: menuId, ...params } = menuOrder;
-    setState({
-      ...state,
-      menuSelect: { ...params, menuId, shopId, orderId },
-      show: true,
-    });
+    setMenuSelect({ ...params, menuId, shopId, orderId });
+    setShow(true);
   };
   const handleUpdateBasket = (value, isRemove) => {
     if (!value) {
-      setState({
-        ...state,
-        show: false,
-      });
+      handleClose();
       return;
     }
+
     const { order, menuOrders: menuOrderUpdated } = value;
-    const menuOrders = state.menuOrders.map((o) => {
+    const menuOrderList = menuOrders.map((o) => {
       const updated = _.find(menuOrderUpdated, (menu) => menu.id === o.id);
       if (!updated) {
-        if (isRemove && o.id === state.menuSelect.menuId) {
+        if (isRemove && o.id === menuSelect.menuId) {
           return {
             ...o,
             itemId: null,
@@ -80,21 +60,21 @@ const MenuPage = () => {
       }
       return updated;
     });
-    setState({
-      ...state,
-      show: false,
-      order: { ...order },
-      menuOrders: [...menuOrders],
-    });
+    setOrder(order);
+    setMenuOrders(menuOrderList);
+    handleClose();
   };
-  const handleClose = () => setState({ ...state, show: false });
+  const handleClose = () => setShow(false);
   const handleGotoBasket = () => navigateApp("/basket");
-  const totalAmount = state.order?.amount ?? 0;
-  const totalItem = _.sumBy(state.order?.items ?? [], "quantity");
+  const totalAmount = order?.amount ?? 0;
+  const totalItem = useMemo(
+    () => _.sumBy(order?.items ?? [], "quantity"),
+    [order]
+  );
   return (
     <React.Fragment>
       <Stack>
-        {state.status === ApiStatus.PENDING && (
+        {status === ApiStatus.PENDING && (
           <React.Fragment>
             <div
               className="bg-dark bg-gradient bg-opacity-50"
@@ -136,18 +116,14 @@ const MenuPage = () => {
             </Stack>
           </React.Fragment>
         )}
-        {state.status === ApiStatus.COMPLETE && (
+        {status === ApiStatus.COMPLETE && (
           <React.Fragment>
-            <Image
-              fluid
-              src={state.shop.imageUrl}
-              style={{ height: "300px" }}
-            />
+            <Image fluid src={shop.imageUrl} style={{ height: "300px" }} />
             <Stack className="p-3">
-              <div className="fw-bold fs-2">{state.shop.name}</div>
+              <div className="fw-bold fs-2">{shop.name}</div>
               <hr />
               <Stack gap={3} style={{ marginBottom: "60px" }}>
-                {state.menuOrders.map((menuOrder) => (
+                {menuOrders.map((menuOrder) => (
                   <Stack
                     key={menuOrder.id}
                     direction="horizontal"
@@ -196,15 +172,15 @@ const MenuPage = () => {
         )}
       </Stack>
       <Modal
-        show={state.show}
+        show={show}
         onHide={handleClose}
         fullscreen={true}
         placement="bottom"
       >
         <Modal.Body className="p-0">
-          {state.show && (
-            <MenuDetail
-              {...state.menuSelect}
+          {show && (
+            <OrderDetail
+              {...menuSelect}
               callback={(value, isRemove) =>
                 handleUpdateBasket(value, isRemove)
               }

@@ -1,10 +1,6 @@
-import { createContext, useContext } from "react";
-import PropTypes from "prop-types";
 import { useSearchParams, useLocation, useNavigate } from "react-router-dom";
 
-const AppContext = createContext({});
-
-const AppProvider = ({ children }) => {
+const useAppUrl = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -23,14 +19,6 @@ const AppProvider = ({ children }) => {
     navigate(getAppUrl(url));
   };
 
-  const value = { shopId, orderId, path, getAppUrl, navigateApp };
-  return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
+  return { shopId, orderId, path, getAppUrl, navigateApp };
 };
-
-AppProvider.propTypes = {
-  children: PropTypes.node.isRequired,
-};
-
-export const useAppContext = () => useContext(AppContext);
-
-export default AppProvider;
+export default useAppUrl;

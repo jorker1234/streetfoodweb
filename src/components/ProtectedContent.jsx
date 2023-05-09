@@ -1,9 +1,10 @@
 import React from "react";
 import PropTypes from "prop-types";
 import { Navigate, useLocation } from "react-router-dom";
-import { useAppContext } from "./AppProvider";
-import { useCartContext } from "./CartProvider";
+import { useCartContext } from "../context/CartProvider";
 import { OrderStatus } from "../apis/order";
+import useAppUrl from "../hooks/useAppUrl";
+import { ApiStatus } from "../constants/app";
 
 const permisionByUrlDict = {
   "/menu": [OrderStatus.INITIALIZE],
@@ -17,30 +18,31 @@ const permisionByUrlDict = {
 };
 
 const permisionByStatusDict = {};
-  permisionByStatusDict[OrderStatus.INITIALIZE] = "/menu";
-  permisionByStatusDict[OrderStatus.PAYMENT_REQUEST] = "/payment";
-  permisionByStatusDict[OrderStatus.PAYMENT_COMMIT] = "/order";
-  permisionByStatusDict[OrderStatus.QUEUE] = "/order";
-  permisionByStatusDict[OrderStatus.COMPLETE] = "/order";
+permisionByStatusDict[OrderStatus.INITIALIZE] = "/menu";
+permisionByStatusDict[OrderStatus.PAYMENT_REQUEST] = "/payment";
+permisionByStatusDict[OrderStatus.PAYMENT_COMMIT] = "/order";
+permisionByStatusDict[OrderStatus.QUEUE] = "/order";
+permisionByStatusDict[OrderStatus.COMPLETE] = "/order";
 
 const ProtectRouter = ({ children }) => {
   const location = useLocation();
-  const { shopId, orderId, path, getAppUrl } = useAppContext();
+  const { shopId, orderId, path, getAppUrl } = useAppUrl();
   const {
-    cart: { isLoaded, shop, order },
+    status,
+    shop,
+    order,
   } = useCartContext();
   const permissionStatus = permisionByUrlDict[path];
   if (!shopId || !orderId || !permissionStatus) {
     return <Navigate to="/notfound" replace state={{ form: location }} />;
   }
-  if (!isLoaded) {
+  if (status !== ApiStatus.COMPLETE) {
     return <React.Fragment>{children}</React.Fragment>;
   }
   if (!shop || !order) {
     return <Navigate to="/notfound" replace state={{ form: location }} />;
   }
 
-  
   if (permissionStatus.indexOf(order.status) === -1) {
     const path = getAppUrl(permisionByStatusDict[order.status]);
     return <Navigate to={path} replace state={{ form: location }} />;

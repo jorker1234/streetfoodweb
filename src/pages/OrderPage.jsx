@@ -1,44 +1,37 @@
 import React, { useState, useEffect } from "react";
 import { Stack, Card, Placeholder } from "react-bootstrap";
-import { useAppContext } from "../components/AppProvider";
-import { useCartContext } from "../components/CartProvider";
+import useAppUrl from "../hooks/useAppUrl";
+import { useCartContext } from "../context/CartProvider";
 import { get as getBill, BillStatus } from "../apis/bill";
 import { ApiStatus } from "../constants/app";
 const OrderPage = () => {
-  const { shopId, orderId } = useAppContext();
-  const {
-    cart: { isLoaded },
-  } = useCartContext();
-  const [state, setState] = useState({
-    status: ApiStatus.PENDING,
-    bill: null,
-  });
+  const { shopId, orderId } = useAppUrl();
+  const { status: cartStatus } = useCartContext();
+  const [status, setStatus] = useState(ApiStatus.PENDING);
+  const [bill, setBill] = useState(null);
 
   useEffect(() => {
-    if (isLoaded) {
-      fetchData();
+    if (cartStatus === ApiStatus.COMPLETE) {
+      fetchData(shopId, orderId);
     }
-  }, [isLoaded]);
+  }, [cartStatus, shopId, orderId]);
 
-  const fetchData = async () => {
+  const fetchData = async (shopId, orderId) => {
     const params = {
       shopId,
       orderId,
     };
     const { bills = [] } = await getBill(params);
-    setState({
-      ...state,
-      status: ApiStatus.COMPLETE,
-      bill: bills[0],
-    });
+    setBill(bills[0]);
+    setStatus(ApiStatus.COMPLETE);
   };
-  const billStatus = state.bill?.status;
-  const totalAmount = state.bill?.amount ?? 0;
+  const billStatus = bill?.status;
+  const totalAmount = bill?.amount ?? 0;
   let progressBarWidth = 0;
   let classStatusPayment = "btn-secondary";
   let classStatusQueue = "btn-secondary";
   let classStatusComplete = "btn-secondary";
-  if (state.status === ApiStatus.COMPLETE) {
+  if (status === ApiStatus.COMPLETE) {
     classStatusPayment = "btn-primary";
     if (billStatus === BillStatus.QUEUE) {
       progressBarWidth = 50;
@@ -53,7 +46,7 @@ const OrderPage = () => {
     <React.Fragment>
       <Stack className="p-2">
         <Stack direction="horizontal" gap={3}>
-          {state.status === ApiStatus.PENDING && (
+          {status === ApiStatus.PENDING && (
             <Placeholder
               as="div"
               animation="glow"
@@ -63,8 +56,8 @@ const OrderPage = () => {
               <Placeholder xs={12} />
             </Placeholder>
           )}
-          {state.status === ApiStatus.COMPLETE && state.bill && (
-            <div className="fw-bold fs-5 mx-auto">{state.bill.shopName}</div>
+          {status === ApiStatus.COMPLETE && bill && (
+            <div className="fw-bold fs-5 mx-auto">{bill.shopName}</div>
           )}
         </Stack>
         <div className="position-relative m-5">
@@ -134,7 +127,7 @@ const OrderPage = () => {
 
         <Stack className="px-2" gap={3}>
           <hr />
-          {state.status === ApiStatus.PENDING && (
+          {status === ApiStatus.PENDING && (
             <React.Fragment>
               <Stack direction="horizontal">
                 <div className="fw-bold fs-5">ชื่อลูกค้า </div>
@@ -200,24 +193,24 @@ const OrderPage = () => {
             </React.Fragment>
           )}
 
-          {state.status === ApiStatus.COMPLETE && (
+          {status === ApiStatus.COMPLETE && (
             <React.Fragment>
-              {state.bill && state.bill.name && (
+              {bill && bill.name && (
                 <Stack direction="horizontal">
                   <div className="fw-bold fs-4">คำสั่งซื้อเลขที่</div>
                   <div className="fw-bold ms-auto text-primary fs-4">
-                    {state.bill.name}
+                    {bill.name}
                   </div>
                 </Stack>
               )}
               <Stack direction="horizontal">
                 <div className="fw-bold fs-5">ชื่อลูกค้า </div>
-                <div className="fs-5 ms-auto">{state.bill?.customer}</div>
+                <div className="fs-5 ms-auto">{bill?.customer}</div>
               </Stack>
               <hr />
               <div className="fw-bold">รายการอาหาร</div>
-              {state.bill &&
-                state.bill.items.map((item) => (
+              {bill &&
+                bill.items.map((item) => (
                   <Stack
                     direction="horizontal"
                     gap={3}

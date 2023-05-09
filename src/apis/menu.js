@@ -13,7 +13,7 @@ export const query = async ({ shopId, orderId }) => {
       orderId,
     },
   });
-  const { shops, menus, orders = [] } = result.data;
+  const { menus, orders = [] } = result.data;
   const items = orders[0]?.items ?? [];
   const menuOrders = menus.map((menu) => {
     const item = _.find(items, (o) => o.menuId === menu.id);
@@ -29,7 +29,6 @@ export const query = async ({ shopId, orderId }) => {
   });
 
   return {
-    shop: shops[0],
     order: orders[0],
     menuOrders,
   };

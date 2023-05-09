@@ -2,76 +2,57 @@ import React, { useState, useEffect } from "react";
 import _ from "lodash";
 import { Link } from "react-router-dom";
 import { Button, Stack, Modal, Card, Placeholder } from "react-bootstrap";
-import MenuDetail from "../components/menu/MenuDetail";
 import { ArrowLeftShort } from "react-bootstrap-icons";
 import { get as getOrderAsync } from "../apis/order";
 import { create as createBillAsync } from "../apis/bill";
-import { useAppContext } from "../components/AppProvider";
-import { useCartContext } from "../components/CartProvider";
+import useAppUrl from "../hooks/useAppUrl";
+import { useCartContext } from "../context/CartProvider";
 import { ApiStatus } from "../constants/app";
+import OrderDetail from "../components/OrderDetail";
 
 const BasketPage = () => {
-  const { shopId, orderId, getAppUrl } = useAppContext();
-  const {
-    validateAsync,
-    cart: { isLoaded },
-  } = useCartContext();
+  const { shopId, orderId, getAppUrl } = useAppUrl();
+  const { reloadCartAsync, status: cartStatus, shop } = useCartContext();
   useEffect(() => {
-    if (isLoaded) {
-      fetchData();
+    if (cartStatus === ApiStatus.COMPLETE) {
+      fetchData(shopId, orderId);
     }
-  }, [isLoaded]);
+  }, [cartStatus, shopId, orderId]);
 
-  const [state, setState] = useState({
-    status: ApiStatus.PENDING,
-    actionStatus: ApiStatus.COMPLETE,
-    show: false,
-    shop: null,
-    order: null,
-    menuSelect: {},
-    menuOrders: [],
-  });
-  const fetchData = async () => {
+  const [status, setStatus] = useState(ApiStatus.PENDING);
+  const [actionStatus, setActionStatus] = useState(ApiStatus.COMPLETE);
+  const [show, setShow] = useState(false);
+  const [menuSelect, setMenuSelect] = useState(null);
+  const [order, setOrder] = useState(null);
+  const [menuOrders, setMenuOrders] = useState([]);
+  const fetchData = async (shopId, orderId) => {
     const params = {
       shopId,
       orderId,
     };
-    const { shop, order, menuOrders = [] } = await getOrderAsync(params);
-    setState({
-      ...state,
-      status: ApiStatus.COMPLETE,
-      shop,
-      order,
-      menuOrders,
-    });
+    const { order, menuOrders = [] } = await getOrderAsync(params);
+    setOrder(order);
+    setMenuOrders(menuOrders);
+    setStatus(ApiStatus.COMPLETE);
   };
-  const totalAmount = state.order?.amount ?? 0;
+  const totalAmount = order?.amount ?? 0;
 
-  const handleClose = () => setState({ ...state, show: false });
+  const handleClose = () => setShow(false);
   const handleEdit = (menuOrder) => {
-    if (
-      state.status !== ApiStatus.COMPLETE ||
-      state.actionStatus !== ApiStatus.COMPLETE
-    ) {
+    if (status !== ApiStatus.COMPLETE || actionStatus !== ApiStatus.COMPLETE) {
       return;
     }
     const { id: menuId, ...params } = menuOrder;
-    setState({
-      ...state,
-      menuSelect: { ...params, menuId, shopId, orderId },
-      show: true,
-    });
+    setMenuSelect({ ...params, menuId, shopId, orderId });
+    setShow(true);
   };
   const handleUpdateBasket = (value, isRemove) => {
     if (!value) {
-      setState({
-        ...state,
-        show: false,
-      });
+      handleClose();
       return;
     }
     const { order, menuOrders: menuOrderUpdated } = value;
-    let menuOrders = state.menuOrders.map((o) => {
+    let menuOrderList = menuOrders.map((o) => {
       const updated = _.find(menuOrderUpdated, (menu) => menu.id === o.id);
       if (!updated) {
         return o;
@@ -79,39 +60,27 @@ const BasketPage = () => {
       return updated;
     });
     if (isRemove) {
-      menuOrders = menuOrders.filter((o) => o.id !== state.menuSelect.menuId);
+      menuOrderList = menuOrderList.filter((o) => o.id !== menuSelect.menuId);
     }
-    setState({
-      ...state,
-      show: false,
-      order: { ...order },
-      menuOrders: [...menuOrders],
-    });
+    setOrder(order);
+    setMenuOrders(menuOrderList);
+    handleClose();
   };
   const handlePayment = async () => {
-    setState({
-      ...state,
-      actionStatus: ApiStatus.PENDING,
-    });
+    setActionStatus(ApiStatus.PENDING);
     const result = await createBillAsync({
       shopId,
       orderId,
       customer: "คุณอร",
     });
     if (result.bills.length > 0 && result.bills[0].isActived) {
-      return await validateAsync(shopId, orderId);
+      return await reloadCartAsync(shopId, orderId);
     }
-    setState({
-      ...state,
-      actionStatus: ApiStatus.COMPLETE,
-    });
+    setActionStatus(ApiStatus.COMPLETE);
   };
 
   const renderButtonPayment = () => {
-    if (
-      state.status === ApiStatus.PENDING ||
-      state.actionStatus === ApiStatus.PENDING
-    ) {
+    if (status === ApiStatus.PENDING || actionStatus === ApiStatus.PENDING) {
       return (
         <Button size="lg" disabled>
           <Placeholder animation="glow">
@@ -129,7 +98,7 @@ const BasketPage = () => {
   return (
     <React.Fragment>
       <Stack className="p-2" gap={3}>
-        {state.status === ApiStatus.PENDING && (
+        {status === ApiStatus.PENDING && (
           <React.Fragment>
             <Stack direction="horizontal" gap={3}>
               <ArrowLeftShort size={36} />
@@ -201,15 +170,13 @@ const BasketPage = () => {
             </Stack>
           </React.Fragment>
         )}
-        {state.status === ApiStatus.COMPLETE && (
+        {status === ApiStatus.COMPLETE && (
           <React.Fragment>
             <Stack direction="horizontal" gap={3}>
               <Link to={getAppUrl("/menu")}>
                 <ArrowLeftShort size={36} />
               </Link>
-              {state.shop && (
-                <div className="fw-bold fs-5">{state.shop.name}</div>
-              )}
+              {shop && <div className="fw-bold fs-5">{shop.name}</div>}
             </Stack>
             <Stack direction="horizontal">
               <div className="fw-bold">สรุปรายการ</div>
@@ -221,7 +188,7 @@ const BasketPage = () => {
               </Link>
             </Stack>
             <Stack gap={3} style={{ marginBottom: "100px" }}>
-              {state.menuOrders.map((menuOrder) => (
+              {menuOrders.map((menuOrder) => (
                 <Stack
                   direction="horizontal"
                   gap={3}
@@ -230,7 +197,7 @@ const BasketPage = () => {
                   onClick={() => handleEdit(menuOrder)}
                 >
                   <Card className="mt-2">
-                    <Card.Body className="p-2">{menuOrder.quantity}x</Card.Body>
+                    <Card.Body className="p-2 text-primary">{menuOrder.quantity}x</Card.Body>
                   </Card>
                   <Stack>
                     <div>{menuOrder.name}</div>
@@ -260,15 +227,15 @@ const BasketPage = () => {
       </Stack>
 
       <Modal
-        show={state.show}
+        show={show}
         onHide={handleClose}
         fullscreen={true}
         placement="bottom"
       >
         <Modal.Body className="p-0">
-          {state.show && (
-            <MenuDetail
-              {...state.menuSelect}
+          {show && (
+            <OrderDetail
+              {...menuSelect}
               callback={(value, isRemove) =>
                 handleUpdateBasket(value, isRemove)
               }

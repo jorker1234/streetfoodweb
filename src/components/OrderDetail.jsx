@@ -6,71 +6,63 @@ import {
   PlusSquareFill,
   DashSquareFill,
 } from "react-bootstrap-icons";
-import { update } from "../../apis/order";
-import { ApiStatus } from "../../constants/app";
+import { update as updateOrderAsync } from "../apis/order";
+import { ApiStatus } from "../constants/app";
 
-const MenuDetail = ({
+const OrderDetail = ({
   shopId,
   orderId,
   menuId,
   itemId,
   name,
   imageUrl,
-  note,
   price,
-  quantity,
+  quantity: quantityParam,
+  note: noteParam,
   callback,
 }) => {
-  const [state, setState] = useState({
-    status: ApiStatus.COMPLETE,
-    quantity: Math.max(1, quantity),
-    note: note ?? "",
-  });
-  const handleAddToBasket = async () => {
-    if (!itemId && state.quantity === 0) {
+  const [status, setStatus] = useState(ApiStatus.COMPLETE);
+  const [quantity, setQuantity] = useState(Math.max(1, quantityParam));
+  const [note, setNote] = useState(noteParam ?? "");
+  const handleUpdateBasket = async () => {
+    if (!itemId && quantity === 0) {
       return callback(null);
     }
-    setState({
-      ...state,
-      status: ApiStatus.PENDING,
-    });
+    setStatus(ApiStatus.PENDING);
     const params = {
       shopId,
       orderId,
       menuId,
-      quantity: state.quantity,
-      note: state.note,
-    };
-    const result = await update(params);
-    callback(result, state.quantity === 0);
-  };
-  const handleOnChange = (e) => {
-    const note = e.target.value;
-    setState({
-      ...state,
+      quantity,
       note,
-    });
+    };
+    const result = await updateOrderAsync(params);
+    callback(result, quantity === 0);
+  };
+  const handleOnNoteChange = (e) => {
+    const value = e.target.value;
+    setNote(value);
   };
   const handleAddQuantity = (value) => {
-    if (state.status !== ApiStatus.COMPLETE) {
+    if (status !== ApiStatus.COMPLETE) {
       return;
     }
-    let quantity = state.quantity + value;
-    if (quantity < 0) {
-      quantity = 0;
-    }
-    setState({
-      ...state,
-      quantity,
-    });
+    const qty = Math.max(0, quantity + value);
+    setQuantity(qty);
   };
-  const amount = state.quantity * price;
-  const buttonText = !itemId
-    ? "เพิ่มรายการ"
-    : state.quantity > 0
-    ? "อัพเดทรายการ"
-    : "ลบรายการ";
-  const buttonColor = itemId && state.quantity === 0 ? "danger" : "primary";
+  const amount = quantity * price;
+  let buttonText = "เพิ่มรายการ";
+  if (!!itemId && quantity > 0) {
+    buttonText = "อัพเดทรายการ";
+  } else if (!!itemId && quantity === 0) {
+    buttonText = "ลบรายการ";
+  } else if (!itemId && quantity === 0) {
+    buttonText = "กลับหน้าเมนู";
+  }
+  if (quantity > 0) {
+    buttonText += ` - ฿${amount.toLocaleString("en-US")}`;
+  }
+  const buttonColor = itemId && quantity === 0 ? "danger" : "primary";
   return (
     <React.Fragment>
       <Stack>
@@ -93,28 +85,32 @@ const MenuDetail = ({
             <textarea
               className="form-control"
               id="txtNote"
-              onChange={handleOnChange}
-              value={state.note}
+              onChange={handleOnNoteChange}
+              value={note}
             />
           </Stack>
           <Stack direction="horizontal" gap={3} className="mx-auto my-3">
-            <DashSquareFill size={36} onClick={() => handleAddQuantity(-1)} />
-            <label>{state.quantity}</label>
-            <PlusSquareFill size={36} onClick={() => handleAddQuantity(1)} />
+            <DashSquareFill size={36} onClick={() => handleAddQuantity(-1)} className="text-primary" />
+            <label>{quantity}</label>
+            <PlusSquareFill size={36} onClick={() => handleAddQuantity(1)} className="text-primary" />
           </Stack>
           <div className="my-2">&nbsp;</div>
         </Stack>
         <Stack className="position-fixed bottom-0 start-0 end-0 p-2 bg-white">
-          {state.status === ApiStatus.PENDING && (
+          {status === ApiStatus.PENDING && (
             <Button variant={buttonColor} size="lg" disabled>
               <Placeholder animation="glow">
                 <Placeholder xs={8} />
               </Placeholder>
             </Button>
           )}
-          {state.status === ApiStatus.COMPLETE && (
-            <Button onClick={handleAddToBasket} variant={buttonColor} size="lg">
-              {buttonText} - ฿{amount.toLocaleString("en-US")}
+          {status === ApiStatus.COMPLETE && (
+            <Button
+              onClick={handleUpdateBasket}
+              variant={buttonColor}
+              size="lg"
+            >
+              {buttonText}
             </Button>
           )}
         </Stack>
@@ -123,7 +119,7 @@ const MenuDetail = ({
   );
 };
 
-MenuDetail.propTypes = {
+OrderDetail.propTypes = {
   shopId: PropTypes.string.isRequired,
   orderId: PropTypes.string.isRequired,
   menuId: PropTypes.string.isRequired,
@@ -137,4 +133,4 @@ MenuDetail.propTypes = {
   callback: PropTypes.func.isRequired,
 };
 
-export default MenuDetail;
+export default OrderDetail;

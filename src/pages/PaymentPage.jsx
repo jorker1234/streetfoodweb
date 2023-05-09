@@ -1,37 +1,29 @@
 import React, { useState, useEffect } from "react";
-import {
-  Button,
-  Stack,
-  Offcanvas,
-  Placeholder,
-} from "react-bootstrap";
+import { Button, Stack, Offcanvas, Placeholder } from "react-bootstrap";
 import qrcode from "qrcode";
 import { ArrowLeftShort } from "react-bootstrap-icons";
-import { useAppContext } from "../components/AppProvider";
-import { useCartContext } from "../components/CartProvider";
+import useAppUrl from "../hooks/useAppUrl";
+import { useCartContext } from "../context/CartProvider";
 import { get as getBill, update as updateBill, BillStatus } from "../apis/bill";
 import { ApiStatus } from "../constants/app";
 
 const PaymentPage = () => {
-  const { shopId, orderId, navigateApp } = useAppContext();
-  const {
-    validateAsync,
-    cart: { isLoaded },
-  } = useCartContext();
-  const [state, setState] = useState({
-    status: ApiStatus.PENDING,
-    actionStatus: ApiStatus.COMPLETE,
-    bill: null,
-    confirmMessage: null,
-    confirmType: null,
-    qrcode: null,
-  });
+  const { shopId, orderId, navigateApp } = useAppUrl();
+  const { reloadCartAsync, status: cartStatus } = useCartContext();
+
+  const [status, setStatus] = useState(ApiStatus.PENDING);
+  const [actionStatus, setActionStatus] = useState(ApiStatus.COMPLETE);
+  const [bill, setBill] = useState(null);
+  const [confirmMessage, setConfirmMessage] = useState(null);
+  const [confirmType, setConfirmType] = useState(null);
+  const [promptpay, setPromptpay] = useState(null);
+
   useEffect(() => {
-    if (isLoaded) {
-      fetchData();
+    if (cartStatus === ApiStatus.COMPLETE) {
+      fetchData(shopId, orderId);
     }
-  }, [isLoaded]);
-  const fetchData = async () => {
+  }, [cartStatus, shopId, orderId]);
+  const fetchData = async (shopId, orderId) => {
     const params = {
       shopId,
       orderId,
@@ -43,72 +35,54 @@ const PaymentPage = () => {
         type: "svg",
         color: { dark: "#003b6a", light: "#f7f8f7" },
       };
-      qrcode.toString(bill?.promptpay, options, (err, qrcode) => {
+      qrcode.toString(bill?.promptpay, options, (err, promptpay) => {
         if (!err) {
-          setState({
-            ...state,
-            status: ApiStatus.COMPLETE,
-            bill,
-            qrcode,
-          });
+          setBill(bill);
+          setPromptpay(promptpay);
+          setStatus(ApiStatus.COMPLETE);
         }
       });
     }
   };
   const handleClose = () => {
-    if (
-      state.status !== ApiStatus.COMPLETE ||
-      state.actionStatus !== ApiStatus.COMPLETE
-    ) {
+    if (status !== ApiStatus.COMPLETE || actionStatus !== ApiStatus.COMPLETE) {
       return;
     }
-    setState({
-      ...state,
-      confirmMessage: null,
-    });
+    setConfirmMessage(null);
   };
   const handleCancel = () => {
     handleConfirmPopup("คุณแน่ใจที่จะทำการยกเลิกรายการ?", "CANCEL");
   };
   const handleConfirm = async () => {
-    if (state.confirmType !== "CANCEL" && state.confirmType !== "PAYMENT") {
+    if (confirmType !== "CANCEL" && confirmType !== "PAYMENT") {
       handleClose();
       return;
     }
-    setState({
-      ...state,
-      actionStatus: ApiStatus.PENDING,
-    });
+    setActionStatus(ApiStatus.PENDING);
     const status =
-      state.confirmType === "PAYMENT" ? BillStatus.PAYMENT : BillStatus.CANCEL;
+      confirmType === "PAYMENT" ? BillStatus.PAYMENT : BillStatus.CANCEL;
     const response = await updateBill({
       shopId,
       orderId,
-      billId: state.bill?.id,
+      billId: bill?.id,
       status,
     });
     const isActived = response.bills[0].isActived;
-    await validateAsync(shopId, orderId);
+    await reloadCartAsync(shopId, orderId);
     if (!isActived) {
       navigateApp("/basket");
     }
   };
   const handleConfirmPopup = (confirmMessage, confirmType) => {
-    if (
-      state.status !== ApiStatus.COMPLETE ||
-      state.actionStatus !== ApiStatus.COMPLETE
-    ) {
+    if (status !== ApiStatus.COMPLETE || actionStatus !== ApiStatus.COMPLETE) {
       return;
     }
-    setState({
-      ...state,
-      confirmMessage,
-      confirmType,
-    });
+    setConfirmMessage(confirmMessage);
+    setConfirmType(confirmType);
   };
   return (
     <React.Fragment>
-      {state.status === ApiStatus.PENDING && (
+      {status === ApiStatus.PENDING && (
         <React.Fragment>
           <Stack className="p-2" gap={3}>
             <Stack direction="horizontal" gap={3}>
@@ -131,18 +105,16 @@ const PaymentPage = () => {
           </Stack>
         </React.Fragment>
       )}
-      {state.status === ApiStatus.COMPLETE && (
+      {status === ApiStatus.COMPLETE && (
         <React.Fragment>
           <Stack className="p-2" gap={3}>
             <Stack direction="horizontal" gap={3}>
               <ArrowLeftShort size={36} onClick={handleCancel} />
-              {state.bill && (
-                <div className="fw-bold fs-5">{state.bill.shopName}</div>
-              )}
+              {bill && <div className="fw-bold fs-5">{bill.shopName}</div>}
             </Stack>
             <Stack>
-              {state.qrcode && (
-                <div dangerouslySetInnerHTML={{ __html: state.qrcode }}></div>
+              {promptpay && (
+                <div dangerouslySetInnerHTML={{ __html: promptpay }}></div>
               )}
             </Stack>
           </Stack>
@@ -165,16 +137,16 @@ const PaymentPage = () => {
         </React.Fragment>
       )}
       <Offcanvas
-        show={!!state.confirmMessage}
+        show={!!confirmMessage}
         onHide={handleClose}
         placement="bottom"
       >
         <Offcanvas.Header closeButton size="lg">
-          <Offcanvas.Title>{state.confirmMessage}</Offcanvas.Title>
+          <Offcanvas.Title>{confirmMessage}</Offcanvas.Title>
         </Offcanvas.Header>
         <Offcanvas.Body>
           <Stack gap={2}>
-            {state.actionStatus === ApiStatus.PENDING && (
+            {actionStatus === ApiStatus.PENDING && (
               <React.Fragment>
                 <Button size="lg" disabled>
                   <Placeholder animation="glow">
@@ -186,7 +158,7 @@ const PaymentPage = () => {
                 </Button>
               </React.Fragment>
             )}
-            {state.actionStatus === ApiStatus.COMPLETE && (
+            {actionStatus === ApiStatus.COMPLETE && (
               <React.Fragment>
                 <Button onClick={handleConfirm} size="lg">
                   ยืนยัน
