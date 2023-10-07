@@ -25,12 +25,15 @@ export const create = async ({ shopId, orderId, customer }) => {
   return result.data;
 };
 
-export const update = async ({ shopId, orderId, billId, status }) => {
-  const result = await billApi.put(`/${billId}`, {
-    shopId,
-    orderId,
-    status,
-  });
+export const update = async ({ shopId, orderId, billId, status, photo }) => {
+  const params = new FormData();
+  if (photo) {
+    params.append('file', photo);
+  }
+  params.append('shopId', shopId);
+  params.append('orderId', orderId);
+  params.append('status', status);
+  const result = await billApi.put(`/${billId}`, params);
   return result.data;
 };
 

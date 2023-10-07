@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Button, Stack, Placeholder } from "react-bootstrap";
 import qrcode from "qrcode";
 import { ArrowLeftShort } from "react-bootstrap-icons";
@@ -17,6 +17,9 @@ const PaymentPage = () => {
   const [actionStatus, setActionStatus] = useState(ApiStatus.COMPLETE);
   const [bill, setBill] = useState(null);
   const [promptpay, setPromptpay] = useState(null);
+  const [file, setFile] = useState(null);
+
+  const hiddenFileInput = useRef(null);
 
   const fetchData = useCallback(async () => {
     if (cartStatus !== ApiStatus.COMPLETE) {
@@ -65,15 +68,38 @@ const PaymentPage = () => {
   };
 
   const handleAccpet = async () => {
-    if (actionStatus !== ApiStatus.COMPLETE) {
+    if (actionStatus !== ApiStatus.COMPLETE || !file) {
       return;
     }
     const isConfirm = await confirm("คุณทำการชำระเงินเรียบร้อยแล้ว?");
     if (isConfirm) {
-      await handleUpdatBillStatus(BillStatus.PAYMENT);
+      await handleUpdatBillStatus(BillStatus.PAYMENT, file);
     }
+    // const isConfirm = await confirm(
+    //   "คุณทำการชำระเงินเรียบร้อยแล้ว?",
+    //   "แนบหลักฐานการโอนเงิน"
+    // );
+    // if (isConfirm && hiddenFileInput.current) {
+    //   hiddenFileInput.current.click();
+    // }
   };
-  const handleUpdatBillStatus = async (status) => {
+
+  const handleFileUpload = () => {
+    hiddenFileInput.current.click();
+  };
+
+  const handleFileChange = async(event) => {
+    setFile(event.target.files[0]);
+    // if(!fileUploaded){
+    //   return;
+    // }
+    // const isConfirm = await confirm("คุณทำการชำระเงินเรียบร้อยแล้ว?");
+    // if (isConfirm) {
+    //   await handleUpdatBillStatus(BillStatus.PAYMENT, fileUploaded);
+    // }
+  };
+
+  const handleUpdatBillStatus = async (status, photo) => {
     setActionStatus(ApiStatus.PENDING);
     try {
       const response = await updateBill({
@@ -81,6 +107,7 @@ const PaymentPage = () => {
         orderId,
         billId: bill?.id,
         status,
+        photo,
       });
       const isActived = response.bills[0].isActived;
       await reloadCartAsync(shopId, orderId);
@@ -129,6 +156,12 @@ const PaymentPage = () => {
                 <div dangerouslySetInnerHTML={{ __html: promptpay }}></div>
               )}
             </Stack>
+            <input
+              type="file"
+              ref={hiddenFileInput}
+              onChange={handleFileChange}
+              style={{ display: "none" }}
+            />
           </Stack>
           <Stack
             className="position-fixed bottom-0 start-0 end-0 p-2 bg-white"
@@ -150,7 +183,10 @@ const PaymentPage = () => {
             )}
             {actionStatus === ApiStatus.COMPLETE && (
               <React.Fragment>
-                <Button size="lg" onClick={handleAccpet}>
+                <Button size="lg" onClick={handleFileUpload} variant="success">
+                  แนบหลักฐานการโอนเงิน
+                </Button>
+                <Button size="lg" onClick={handleAccpet} disabled={!file}>
                   ยืนยันการชำระเงิน
                 </Button>
                 <Button variant="danger" onClick={handleCancel} size="lg">
